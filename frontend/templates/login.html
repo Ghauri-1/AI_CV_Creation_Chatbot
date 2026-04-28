@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='st.css') }}">
+
+</head>
+
+
+
+
+<body>
+    <div class="home_basic"> <!-- or .basic – pick one name -->
+
+        <h1>Login</h1>
+        <h3>Enter your details below</h3>
+        <br>
+
+
+        {% if error %}
+        <div class="error-msg">
+            {{ error }}
+        </div>
+        {% endif %}
+
+
+        <form action="{{ url_for('login') }}" method="POST" class="container">
+
+            <label for="username">Email</label>
+            <input type="text" name="em" id="em" placeholder="Email" required>
+
+            <label for="pw">Password</label>
+            <input type="password" name="pw" id="pw" placeholder="Password" required>
+
+            <input type="submit" value="Sign In" class="registerbtn">
+
+            <div class="signin">
+                <p>Don't have an account? <a href="{{ url_for('reg') }}">Register</a></p>
+            </div>
+        </form>
+
+    </div>
+
+
+</body>
+
+
+
+
+
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='st.css') }}">
+</head>
+<body>
+
+<div class="chat-page">
+
+    <!-- Header -->
+    <div class="chat-header">
+        <a href="{{ url_for('dashboard') }}" class="chat-back-link">&larr; Dashboard</a>
+        <h2>CV Assistant</h2>
+        <span class="chat-user">{{ current_user.username }}</span>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chat-messages">
+        <!-- History and new messages are injected here by JS -->
+    </div>
+
+    <!-- Input bar -->
+    <div class="chat-input-bar">
+        <textarea
+            id="chat-input"
+            class="chat-textarea"
+            placeholder="Tell me about your experience, education, projects..."
+            rows="1"
+        ></textarea>
+        <button id="chat-send-btn" class="chat-send-btn">Send</button>
+    </div>
+
+</div>
+
+<script>
+  const messagesEl = document.getElementById('chat-messages');
+  const inputEl    = document.getElementById('chat-input');
+  const sendBtn    = document.getElementById('chat-send-btn');
+
+  // Render one message bubble
+  function appendMessage(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-wrap msg-' + role;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.textContent = text;  // textContent is XSS-safe
+
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  // Show a "Thinking..." placeholder while waiting for the server
+  function appendThinking() {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-wrap msg-assistant';
+    wrap.id = 'thinking-bubble';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble msg-thinking';
+    bubble.textContent = 'Thinking...';
+
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function removeThinking() {
+    const el = document.getElementById('thinking-bubble');
+    if (el) el.remove();
+  }
+
+  function scrollToBottom() {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // Load conversation history from the server on page load
+  async function loadHistory() {
+    try {
+      const res = await fetch('/chat/history');
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      if (!res.ok) return;
+      const history = await res.json();
+      if (history.length === 0) {
+        // Show a welcome bubble if no history
+        appendMessage('assistant', "Hi! I'm your CV assistant. Tell me about your work experience, education, or projects and I'll help you build a great CV.");
+      } else {
+        history.forEach(m => appendMessage(m.role, m.content));
+      }
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    }
+  }
+
+  // Send a message to the agent
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    appendMessage('user', text);
+    appendThinking();
+
+    try {
+      const res = await fetch('/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+
+      removeThinking();
+
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        appendMessage('assistant', data.reply);
+      } else {
+        appendMessage('assistant', 'Sorry, something went wrong. Please try again.');
+      }
+    } catch (err) {
+      removeThinking();
+      appendMessage('assistant', 'Network error. Please check your connection.');
+    } finally {
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  // Send on button click
+  sendBtn.addEventListener('click', sendMessage);
+
+  // Enter sends; Shift+Enter inserts a newline
+  inputEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Auto-grow textarea up to 120px
+  inputEl.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  // Initialise
+  loadHistory();
+  inputEl.focus();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='st.css') }}">
+    <style>
+        .card.cv-card {
+            cursor: pointer;
+            transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+        }
+
+        .card.cv-card:hover {
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.13);
+            transform: translateY(-3px);
+            border-color: #1877f2;
+        }
+
+        .card.cv-card:hover .card-btn.cv-btn {
+            background: #1877f2;
+            color: white;
+        }
+
+        .card-btn.cv-btn {
+            background: #e7f0fd;
+            color: #1877f2;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: center;
+            transition: background 0.2s, color 0.2s;
+            width: 100%;
+        }
+
+        /* ── Modal overlay ── */
+        .cv-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cv-modal-overlay.active {
+            display: flex;
+        }
+
+        .cv-modal {
+            background: white;
+            border-radius: 16px;
+            width: 90vw;
+            max-width: 860px;
+            height: 88vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+        }
+
+        .cv-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 22px;
+            border-bottom: 1px solid #e4e6ea;
+            flex-shrink: 0;
+        }
+
+        .cv-modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cv-modal-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cv-download-btn {
+            padding: 7px 16px;
+            background: #1877f2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+
+        .cv-download-btn:hover {
+            background: #166fe5;
+            text-decoration: none;
+            color: white;
+        }
+
+        .cv-close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid #e4e6ea;
+            background: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #606770;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+            line-height: 1;
+        }
+
+        .cv-close-btn:hover {
+            background: #f0f2f5;
+            color: #1a1a1a;
+        }
+
+        .cv-modal-body {
+            flex: 1;
+            overflow: hidden;
+            background: #f0f2f5;
+        }
+
+        .cv-modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="sidebar-brand">⚡ AI Career Assistant</div>
+                <a href="{{ url_for('chat') }}" class="sidebar-new-chat">
+                    <span class="snav-icon">+</span> New chat
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section-label">Menu</div>
+                <a href="{{ url_for('chat') }}" class="sidebar-nav-item">
+                    <span class="snav-icon">💬</span> Start New Chat
+                </a>
+                <a href="#" class="sidebar-nav-item" onclick="openCV(event)">
+                    <span class="snav-icon">📄</span> My CV
+                </a>
+                <a href="#" class="sidebar-nav-item muted">
+                    <span class="snav-icon">🎯</span> ATS Analyser
+                    <span class="snav-pill">Soon</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-recents">
+                <div class="sidebar-section-label">Recents</div>
+                {% if conversations %}
+                {% for conv in conversations %}
+                <a href="{{ url_for('chat') }}?conv_id={{ conv.conv_id }}" class="sidebar-conv-item"
+                    title="{{ conv.title or 'Untitled chat' }}">
+                    {{ (conv.title or 'Untitled chat')[:36] }}{% if (conv.title or '')|length > 36 %}...{% endif %}
+                </a>
+                {% endfor %}
+                {% else %}
+                <div class="sidebar-empty">No conversations yet</div>
+                {% endif %}
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">{{ current_user.username[0].upper() }}</div>
+                    <span class="sidebar-username">{{ current_user.username }}</span>
+                </div>
+                <a href="{{ url_for('logout') }}" class="sidebar-logout-btn">Logout</a>
+            </div>
+        </aside>
+
+        <!-- ── MAIN CONTENT ── -->
+        <main class="dash-main">
+
+            {% if message %}
+            <div class="error-msg" style="margin-bottom:24px;">{{ message }}</div>
+            {% endif %}
+
+            <div class="dash-welcome">
+                <h1>Good to see you, {{ current_user.username }} 👋</h1>
+                <p>What would you like to work on today?</p>
+            </div>
+
+            <div class="dash-cards">
+
+                <div class="card">
+                    <div class="card-icon blue">💬</div>
+                    <h2>Start New Chat</h2>
+                    <p>Build or improve your CV through natural conversation with AI.</p>
+                    <a href="{{ url_for('chat') }}" class="card-btn">Open Chat</a>
+                </div>
+
+                <div class="card cv-card" onclick="openCV(event)">
+                    <div class="card-icon green">📄</div>
+                    <h2>My CV</h2>
+                    <p>View and download your generated CV in a professional format.</p>
+                    <span class="card-btn cv-btn">View My CV</span>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon orange">🎯</div>
+                    <h2>ATS Analyser</h2>
+                    <p>Check how well your CV matches any job description.</p>
+                    <span class="card-btn disabled">Coming Soon</span>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ── CV MODAL ── -->
+    <div class="cv-modal-overlay" id="cvModal" onclick="handleOverlayClick(event)">
+        <div class="cv-modal">
+
+            <div class="cv-modal-header">
+                <div class="cv-modal-title">
+                    📄 {{ current_user.username }}'s CV
+                </div>
+                <div class="cv-modal-actions">
+                    <a href="{{ url_for('static', filename='cv/my_cv.pdf') }}"
+                        download="{{ current_user.username }}_CV.pdf" class="cv-download-btn">
+                        ⬇ Download
+                    </a>
+                    <button class="cv-close-btn" onclick="closeCV()">✕</button>
+                </div>
+            </div>
+
+            <div class="cv-modal-body">
+                <iframe id="cvFrame" src="" title="CV Preview"></iframe>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const CV_URL = "{{ url_for('static', filename='cv/my_cv.pdf') }}";
+
+        function openCV(e) {
+            e.preventDefault();
+            const frame = document.getElementById('cvFrame');
+            if (!frame.src || frame.src === window.location.href) {
+                frame.src = CV_URL;
+            }
+            document.getElementById('cvModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCV() {
+            document.getElementById('cvModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function handleOverlayClick(e) {
+            if (e.target === document.getElementById('cvModal')) {
+                closeCV();
+            }
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeCV();
+        });
+    </script>
+
+</body>
+
+</html>

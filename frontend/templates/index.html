@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AI Career Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='st.css') }}">
+</head>
+
+<body>
+    <div class="landing">
+
+        <nav class="landing-nav">
+            <div class="nav-brand">
+                <span class="nav-logo">⚡</span>
+                AI Career Assistant
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('login') }}" class="nav-link">Sign in</a>
+                <a href="{{ url_for('reg') }}" class="btn-primary small">Get Started</a>
+            </div>
+        </nav>
+
+        <div class="landing-hero">
+            <div class="hero-badge">Powered by AI</div>
+            <h1>Build a CV that<br><span class="hero-highlight">beats every filter</span></h1>
+            <p>Your AI career assistant collects your experience through natural conversation, generates a polished CV,
+                and analyses it against any job description, so you always land the interview.</p>
+            <div class="landing-btns">
+                <a href="{{ url_for('reg') }}" class="btn-primary">Create free account</a>
+                <a href="{{ url_for('login') }}" class="btn-secondary">Sign in</a>
+            </div>
+        </div>
+
+        <div class="landing-features">
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3>Chat to build</h3>
+                <p>No boring forms. Just tell the AI about your experience and it structures everything for you.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <h3>Instant CV</h3>
+                <p>Generate a clean, professional CV from your stored profile in one click.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>ATS Analysis</h3>
+                <p>Paste any job description and get a match score, missing keywords, and improvement tips.</p>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
